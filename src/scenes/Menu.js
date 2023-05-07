@@ -26,7 +26,7 @@ class Menu extends Phaser.Scene
             game.settings = {
                 playerSpeed: 5
             };
-            this.scene.start("playScene");
+            this.scene.start("scene1");
         }
     }
 }

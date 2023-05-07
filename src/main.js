@@ -1,3 +1,7 @@
+/*
+    Reference: https://www.youtube.com/watch?v=7UlNsN0RyEE by "ourcade"
+*/
+
 'use strict';
 
 //reserve keyboard vars
@@ -19,7 +23,7 @@ let config =
             }
         }
     },
-    scene: [Load, Menu, Play]
+    scene: [Load, Menu, Scene1]
 };
 
 let game = new Phaser.Game(config);
@@ -30,7 +34,7 @@ let tileSize = 64;
 let highScore = 0;
 let currentScroe = 0;
 
-let currentScene = 0;
+let sceneIndex = 0;
 
 let borderUISize = game.config.height / 15;
 let borderPadding = borderUISize / 3;
