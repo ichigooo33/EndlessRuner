@@ -5,7 +5,7 @@
 'use strict';
 
 //reserve keyboard vars
-let keyUP, keyLEFT, keyRIGHT;
+let keyUP, keyDOWN, keyLEFT, keyRIGHT, keyR, keyG;
 
 //game config
 let config = 
@@ -19,7 +19,7 @@ let config =
             debug: true,
             gravity:{
                 x: 0,
-                y: 2000
+                y: 0
             }
         }
     },
@@ -30,6 +30,8 @@ let game = new Phaser.Game(config);
 
 //global variables
 let tileSize = 64;
+
+let gravityForce = 1500;
 
 let highScore = 0;
 let currentScroe = 0;
