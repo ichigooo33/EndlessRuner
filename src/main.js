@@ -40,5 +40,4 @@ let currentScroe = 0;
 
 let sceneIndex = 0;
 
-let borderUISize = game.config.height / 15;
-let borderPadding = borderUISize / 3;
+let sceneVelocity = 300;

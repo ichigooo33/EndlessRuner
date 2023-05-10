@@ -32,7 +32,7 @@ class Scene1 extends Phaser.Scene
         this.bg_foreground = this.add.tileSprite(0, 0, 960, 540, "scene1_bg_foreground").setOrigin(0, 0);
 
         //create pipe & blend color
-        this.pipe_base = this.add.image(0, 0, "scene1_pipe_base").setOrigin(0, 0);
+        this.pipe_base = this.add.tileSprite(0, 0, 960, 540, "scene1_pipe_base").setOrigin(0, 0);
         
         const pipe_colorHex = 0x5E5CB0;
         const pipe_maxAlpha = 0.8;
@@ -97,27 +97,32 @@ class Scene1 extends Phaser.Scene
         this.fish.setCollideWorldBounds(true);
         this.fish.setMaxVelocity(this.player_maxSpeedX, this.player_maxSpeedY);
 
+        //set up enemies
+        this.spikeBallGroup = this.add.group();
+
         //create groundTile group
-        this.ground = this.add.group();
-        for(let i = 0; i < game.config.width; i += tileSize)
+        this.groundGroup = this.add.group();
+        for(let i = -5 * tileSize; i < game.config.width + 5 * tileSize; i += tileSize)
         {
             let tile = this.physics.add.sprite(i, 20, "scene1_groundTile").setOrigin(0);
             tile.body.setSize(64, 40);
             tile.body.immovable = true;
             tile.body.allowGravity = false;
-            this.ground.add(tile);
+            this.groundGroup.add(tile);
         }
-        for(let i = 0; i < game.config.width; i += tileSize)
+        for(let i = -5 * tileSize; i < game.config.width + 5 * tileSize; i += tileSize)
         {
             let tile = this.physics.add.sprite(i, 460, "scene1_groundTile").setOrigin(0);
             tile.body.setSize(64, 40);
             tile.body.immovable = true;
             tile.body.allowGravity = false;
-            this.ground.add(tile);
+            this.groundGroup.add(tile);
         }
 
         //add physics collider
-        this.physics.add.collider(this.fish, this.ground);
+        this.physics.add.collider(this.fish, this.groundGroup);
+        this.physics.add.collider(this.fish, this.spikeBallGroup);
+        this.physics.add.collider(this.spikeBallGroup, this.groundGroup);
 
         //define keys
         keyLEFT = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.LEFT);
@@ -136,17 +141,18 @@ class Scene1 extends Phaser.Scene
 
     update()
     {
-        //update tile sprite with parallax scrolling
-        for(let i = 0; i < this.backgroundGroup.getChildren().length; i++)
+        if(Phaser.Input.Keyboard.JustDown(keyG))
         {
-            this.backgroundGroup.getChildren()[i].tilePositionX += this.backgroundSpeed[i];
+            console.log(this.spikeBallGroup.getLength());
         }
 
         //update if not gameOver
         if(!this.gameOver)
         {
+            this.backgroundScroll();
             this.playerMove();
             this.playerSwim();
+            this.destroyEnemies();
         }
     }
 
@@ -190,5 +196,44 @@ class Scene1 extends Phaser.Scene
     playerSwim()
     {
         this.fish.play("swim", true);
+    }
+
+    backgroundScroll()
+    {
+        //update tile sprite with parallax scrolling
+        for(let i = 0; i < this.backgroundGroup.getChildren().length; i++)
+        {
+            this.backgroundGroup.getChildren()[i].tilePositionX += this.backgroundSpeed[i];
+        }
+
+        //update pipe sprite
+        this.pipe_base.tilePositionX += 7;
+    }
+
+    addSpikeBall(y)
+    {
+        let tempSpikeBall = new SpikeBall(this, game.config.width + tileSize, y, "spikeBall", sceneVelocity);
+        tempSpikeBall.body.setSize(64, 64);
+        tempSpikeBall.body.setDragY(1200);
+        this.spikeBallGroup.add(tempSpikeBall);
+    }
+
+    spikeBallGenerator()
+    {
+
+    }
+
+    destroyEnemies()
+    {
+        //check if destory spikeball
+        for(let i = 0; i < this.spikeBallGroup.getLength(); i++)
+        {
+            let temp = this.spikeBallGroup.getChildren()[i];
+            if(temp.x < 0 - tileSize)
+            {
+                this.spikeBallGroup.remove(temp);
+                temp.destroy;                               //why destory rather than destory()?
+            }
+        }
     }
 }

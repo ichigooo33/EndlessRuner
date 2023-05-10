@@ -27,6 +27,9 @@ class Load extends Phaser.Scene
 
         //load player vfx assets
         this.load.atlas("vfx_atlas", "vfx_atlas.png", "vfx_sprites.json");
+
+        //load enemies
+        this.load.image("spikeBall", "spikeball.png");
     }
 
     create()
