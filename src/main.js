@@ -1,5 +1,7 @@
 /*
-    Reference: https://www.youtube.com/watch?v=7UlNsN0RyEE by "ourcade"
+    Reference: 
+        https://www.youtube.com/watch?v=7UlNsN0RyEE by "ourcade"
+        https://labs.phaser.io/edit.html?src=src/display/blend%20modes/graphics%20blend%20mode.js
 */
 
 'use strict';
