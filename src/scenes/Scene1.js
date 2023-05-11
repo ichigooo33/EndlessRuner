@@ -24,6 +24,10 @@ class Scene1 extends Phaser.Scene
 
         this.updateSpeed = false;
 
+        this.sceneVelocity = 0;
+
+        this.currentScore = 0;
+
         //create backgroundGroup & tile sprite
         this.add.image(0, 0, "scene1_bg_basecolor").setOrigin(0, 0);
         this.add.image(0, 0, "scene1_bg_starmoon").setOrigin(0, 0);
@@ -58,21 +62,18 @@ class Scene1 extends Phaser.Scene
         this.backgroundGroup.add(this.bg_foreground);
         this.backgroundGroup.add(this.pipe_base);
 
-        //add gameOver text
-        let gameOverTextConfig = {
-            fontFamily: "Monospace",
-            fontSize: "24px",
-            color: "#ffffff",
-            align: "center",
-            padding: {
-                top: 5,
-                bottom: 5,
-            }
+        // add snapshot image from prior Scene
+        if (this.textures.exists('titlesnapshot')) {
+            let titleSnap = this.add.image(0, 0, 'titlesnapshot').setOrigin(0, 0);
+            this.tweens.add({
+                targets: titleSnap,
+                duration: 1500,
+                alpha: { from: 1, to: 0 },
+                repeat: 0
+            });
+        } else {
+            console.log('texture error');
         }
-        this.gameOverText_1 = this.add.text(game.config.width / 2, game.config.height / 3, "GAME OVER", gameOverTextConfig).setOrigin(0.5);
-        this.gameOverText_2 = this.add.text(game.config.width / 2, game.config.height / 3 + tileSize, "Press (R) to Restart or ← for Menu", gameOverTextConfig).setOrigin(0.5);
-        this.gameOverText_1.alpha = 1;
-        this.gameOverText_2.alpha = 1;
 
         //create fish animation
         this.anims.create({
@@ -126,6 +127,21 @@ class Scene1 extends Phaser.Scene
         //set up enemies
         this.spikeBallGroup = this.add.group();
 
+        //add gameOver text
+        let gameOverTextConfig = {
+            fontFamily: "Monospace",
+            fontSize: "40px",
+            color: "#faf6a7",
+            align: "left"
+        }
+
+        this.result = this.add.image(0, 0, "scene1_result").setOrigin(0, 0);
+        this.result.alpha = 0;
+        this.scoreText_1 = this.add.text(game.config.width / 2, game.config.height / 2 + 30, "", gameOverTextConfig).setOrigin(0.5);
+        this.scoreText_2 = this.add.text(game.config.width / 2, game.config.height / 2 + 30 + tileSize, "", gameOverTextConfig).setOrigin(0.5);
+        this.scoreText_1.alpha = 0;
+        this.scoreText_2.alpha = 0;
+
         //create groundTile group
         this.groundGroup = this.add.group();
         for(let i = -5 * tileSize; i < game.config.width + 5 * tileSize; i += tileSize)
@@ -147,17 +163,15 @@ class Scene1 extends Phaser.Scene
 
         //add physics collider
         this.physics.add.collider(this.fish, this.groundGroup);
-        this.physics.add.collider(this.fish, this.spikeBallGroup);
         this.physics.add.collider(this.spikeBallGroup, this.groundGroup);
         this.physics.add.collider(this.spikeBallGroup, this.spikeBallGroup);
 
         //define keys
-        keyLEFT = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.LEFT);
-        keyRIGHT = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.RIGHT);
         keyUP = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.UP);
         keyDOWN = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.DOWN);
         keyR = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.R);
         keyG = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.G);
+        keyT = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.T);
 
         // set up Phaser-provided cursor key input
         // this.cursors = this.input.keyboard.createCursorKeys();
@@ -177,7 +191,7 @@ class Scene1 extends Phaser.Scene
     {
         if(Phaser.Input.Keyboard.JustDown(keyG))
         {
-            console.log(`Current Score: ${currentScroe}`);
+            //console.log(`Current Score: ${this.currentScore}`);
         }
 
         //update if not gameOver
@@ -189,6 +203,9 @@ class Scene1 extends Phaser.Scene
             this.playerSwim();
             this.destroyEnemies();
             this.updateSpikeBallSpeed();
+
+            //check fish collision
+        this.physics.world.collide(this.fish, this.spikeBallGroup, this.fishCollision, null, this);
         }
         else
         {
@@ -198,6 +215,30 @@ class Scene1 extends Phaser.Scene
             this.spikeBallEventUp.remove(false);
             this.spikeBallEventDown.remove(false);
             this.currentScoreUpdateEvent.remove(false);
+
+            //update high score
+            if(this.currentScore > highScore)
+            {
+                highScore = this.currentScore;
+            }
+
+            //press R to restart
+            if(Phaser.Input.Keyboard.JustDown(keyR))
+            {
+                this.bgm.destroy();
+                console.log(`currentScore: ${this.currentScore}`);
+                console.log(`highScore: ${highScore}`);
+                this.scene.restart();
+            }
+
+            //press T to return to title
+            if(Phaser.Input.Keyboard.JustDown(keyT))
+            {
+                this.bgm.destroy();
+                console.log(`currentScore: ${this.currentScore}`);
+                console.log(`highScore: ${highScore}`);
+                this.scene.start("menuScene");
+            }
         }
     }
 
@@ -252,7 +293,7 @@ class Scene1 extends Phaser.Scene
         //update tile sprite with parallax scrolling
         for(let i = 0; i < this.backgroundGroup.getLength(); i++)
         {
-            this.backgroundGroup.getChildren()[i].tilePositionX += this.backgroundSpeed[i] * sceneVelocity;
+            this.backgroundGroup.getChildren()[i].tilePositionX += this.backgroundSpeed[i] * this.sceneVelocity;
         }
     }
 
@@ -260,7 +301,7 @@ class Scene1 extends Phaser.Scene
     {
         if(this.bg_turotial.x > -game.config.width)
         {
-            this.bg_turotial.x -= 7 * sceneVelocity;
+            this.bg_turotial.x -= 7 * this.sceneVelocity;
         }
         else
         {
@@ -271,18 +312,18 @@ class Scene1 extends Phaser.Scene
     addSpikeBallUp()
     {
         let tempSpikeBall = new SpikeBall(this, game.config.width + tileSize, 90 + Math.random() * 100, "spikeBall").setScale(0.5);
-        tempSpikeBall.body.setSize(64, 64);
+        tempSpikeBall.body.setSize(80, 80);
         tempSpikeBall.body.setDragY(500);
-        tempSpikeBall.setVelocityX(-sceneVelocity * 200);
+        tempSpikeBall.setVelocityX(-this.sceneVelocity * 200);
         this.spikeBallGroup.add(tempSpikeBall);
     }
 
     addSpikeBallDown()
     {
         let tempSpikeBall = new SpikeBall(this, game.config.width + tileSize, 190 + Math.random() * 270, "spikeBall").setScale(0.5);
-        tempSpikeBall.body.setSize(64, 64);
+        tempSpikeBall.body.setSize(80, 80);
         tempSpikeBall.body.setDragY(500);
-        tempSpikeBall.setVelocityX(-sceneVelocity * 200);
+        tempSpikeBall.setVelocityX(-this.sceneVelocity * 200);
         this.spikeBallGroup.add(tempSpikeBall);
     }
 
@@ -297,10 +338,10 @@ class Scene1 extends Phaser.Scene
         {
             for(let i = 0; i < this.spikeBallGroup.getLength(); i++)
             {
-                this.spikeBallGroup.getChildren()[i].setVelocityX(-sceneVelocity * 200);
+                this.spikeBallGroup.getChildren()[i].setVelocityX(-this.sceneVelocity * 200);
             }
             this.updateSpeed = false;
-            //console.log(`Spike Speed Updated to: ${-sceneVelocity * 200}`);
+            //console.log(`Spike Speed Updated to: ${-this.sceneVelocity * 200}`);
         }
     }
 
@@ -323,19 +364,19 @@ class Scene1 extends Phaser.Scene
 
     sceneVelocityUp()
     {
-        sceneVelocity += 0.1;
+        this.sceneVelocity += 0.1;
         //console.log(`sceneVelocity: ${sceneVelocity}`);
 
-        if(sceneVelocity < 4)
+        if(this.sceneVelocity < 4)
         {
-            if(sceneVelocity % 1 >= 0.99 || sceneVelocity % 1 <= 0.01)
+            if(this.sceneVelocity % 1 >= 0.99 || this.sceneVelocity % 1 <= 0.01)
             {
                 this.spikeBallEventDown.remove(false);
-                this.spikeBallEventDown = this.time.addEvent({ delay: 8000 / sceneVelocity, callback: this.addSpikeBallDown, callbackScope: this, repeat: -1 });
+                this.spikeBallEventDown = this.time.addEvent({ delay: 8000 / this.sceneVelocity, callback: this.addSpikeBallDown, callbackScope: this, repeat: -1 });
                 //console.log("Down +");
 
                 this.spikeBallEventUp.remove(false);
-                this.spikeBallEventUp = this.time.addEvent({ delay: 5000 / sceneVelocity, callback: this.addSpikeBallUp, callbackScope: this, repeat: -1 });
+                this.spikeBallEventUp = this.time.addEvent({ delay: 5000 / this.sceneVelocity, callback: this.addSpikeBallUp, callbackScope: this, repeat: -1 });
                 //console.log("Up +");
             }
         }
@@ -343,6 +384,26 @@ class Scene1 extends Phaser.Scene
 
     updateCurrentScore()
     {
-        currentScroe += sceneVelocity * 10;
+        this.currentScore += this.sceneVelocity * 10;
+    }
+
+    fishCollision()
+    {
+        this.gameOver = true;
+
+        for(let i = 0; i < this.spikeBallGroup.getLength(); i++)
+        {
+            this.spikeBallGroup.getChildren()[i].setVelocityX(0);
+        }
+
+        this.fish.setTint(0xFF0000);
+        this.sound.play("sfx_hurt");
+
+        this.result.alpha = 1;
+
+        this.scoreText_1.text = this.currentScore;
+        this.scoreText_1.alpha = 1;
+        this.scoreText_2.text = highScore;
+        this.scoreText_2.alpha = 1;
     }
 }

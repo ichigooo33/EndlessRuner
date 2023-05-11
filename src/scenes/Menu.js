@@ -14,19 +14,53 @@ class Menu extends Phaser.Scene
 
         //define keys
         keyUP = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.UP);
-        keyLEFT = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.LEFT);
-        keyRIGHT = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.RIGHT);
+        keyDOWN = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.DOWN);
+
+        //load credit image
+        this.credit = this.add.image(0, 0, "titleScreen_credit").setOrigin(0, 0);
+        this.credit.alpha = 0;
     }
 
     update()
     {
-        if(Phaser.Input.Keyboard.JustDown(keyLEFT))
+        if(this.credit.alpha == 0)
         {
-            //initialize game settings
-            game.settings = {
-                playerSpeed: 5
-            };
-            this.scene.start("scene1");
+            if(Phaser.Input.Keyboard.JustDown(keyUP))
+            {
+                //initialize game settings
+                game.settings = {
+                    playerSpeed: 5
+                };
+    
+                //snapshot from the example
+                let textureManager = this.textures;
+                // take snapshot of the entire game viewport
+                // https://newdocs.phaser.io/docs/3.55.2/Phaser.Renderer.WebGL.WebGLRenderer#snapshot
+                // .snapshot(callback, type, encoderOptions)
+                // the image is automatically passed to the callback
+                this.game.renderer.snapshot((snapshotImage) => {
+                    // make sure an existing texture w/ that key doesn't already exist
+                    if(textureManager.exists('titlesnapshot')) {
+                        textureManager.remove('titlesnapshot');
+                    }
+                    // take the snapshot img returned from callback and add to texture manager
+                    textureManager.addImage('titlesnapshot', snapshotImage);
+                });
+    
+                this.scene.start("scene1");
+            }
+
+            if(Phaser.Input.Keyboard.JustDown(keyDOWN))
+            {
+                this.credit.alpha = 1;
+            }
+        }
+        else
+        {
+            if(Phaser.Input.Keyboard.JustDown(keyDOWN))
+            {
+                this.credit.alpha = 0;
+            }
         }
     }
 }
