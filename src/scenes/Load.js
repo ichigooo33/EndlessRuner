@@ -22,6 +22,11 @@ class Load extends Phaser.Scene
         this.load.image("scene1_bg_starmoon", "scene1_bg_starmoon.png");
         this.load.image("scene1_pipe_base", "scene1_pipe_base.png");
 
+        this.load.audio("bgm", "bgm.mp3");
+        this.load.audio("sfx_up", "sfx_up.wav");
+        this.load.audio("sfx_down", "sfx_down.wav");
+        this.load.audio("sfx_hurt", "sfx_hurt.wav");
+
         //load player assets
         this.load.atlas("player_atlas", "player_atlas.png", "sprites.json");
 

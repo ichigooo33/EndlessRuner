@@ -13,7 +13,7 @@ class Scene1 extends Phaser.Scene
         sceneIndex = 1;
 
         //variables & settings
-        this.backgroundSpeed = [1, 3, 5];
+        this.backgroundSpeed = [1, 3, 5, 7];
 
         this.player_acceleration = 1500;
         this.player_maxSpeedX = 500;
@@ -21,6 +21,8 @@ class Scene1 extends Phaser.Scene
         this.player_drag = 800;
 
         this.physics.world.gravity.y = gravityForce;
+
+        this.updateSpeed = false;
 
         //create backgroundGroup & tile sprite
         this.add.image(0, 0, "scene1_bg_basecolor").setOrigin(0, 0);
@@ -52,6 +54,7 @@ class Scene1 extends Phaser.Scene
         this.backgroundGroup.add(this.bg_background);
         this.backgroundGroup.add(this.bg_midground);
         this.backgroundGroup.add(this.bg_foreground);
+        this.backgroundGroup.add(this.pipe_base);
 
         //create fish animation
         this.anims.create({
@@ -123,6 +126,7 @@ class Scene1 extends Phaser.Scene
         this.physics.add.collider(this.fish, this.groundGroup);
         this.physics.add.collider(this.fish, this.spikeBallGroup);
         this.physics.add.collider(this.spikeBallGroup, this.groundGroup);
+        this.physics.add.collider(this.spikeBallGroup, this.spikeBallGroup);
 
         //define keys
         keyLEFT = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.LEFT);
@@ -137,13 +141,19 @@ class Scene1 extends Phaser.Scene
 
         //store gameOVer status
         this.gameOver = false;
+
+        //create time events
+        this.speedUpEvent = this.time.addEvent({ delay: 2000, callback: this.sceneVelocityUp, callbackScope: this, repeat: 50 }); //speed up every 2 seconds, 100 seconds to reach maxSpeed
+        this.speedChangeEvent = this.time.addEvent({ delay: 2000, callback: this.updateSpeedChangeStatus, callbackScope: this, repeat: -1 });
+        this.spikeBallEventUp = this.time.addEvent({ delay: 5000, callback: this.addSpikeBallUp, callbackScope: this, repeat: -1 });
+        this.spikeBallEventDown = this.time.addEvent({ delay: 8000, callback: this.addSpikeBallDown, callbackScope: this, repeat: -1 });
     }
 
     update()
     {
         if(Phaser.Input.Keyboard.JustDown(keyG))
         {
-            console.log(this.spikeBallGroup.getLength());
+            console.log(`Current Spike Ball Number: ${this.spikeBallGroup.getLength()}`);
         }
 
         //update if not gameOver
@@ -153,6 +163,7 @@ class Scene1 extends Phaser.Scene
             this.playerMove();
             this.playerSwim();
             this.destroyEnemies();
+            this.updateSpikeBallSpeed();
         }
     }
 
@@ -161,20 +172,24 @@ class Scene1 extends Phaser.Scene
         if(Phaser.Input.Keyboard.JustDown(keyUP) && this.physics.world.gravity.y > 0)
         {
             this.physics.world.gravity.y = -gravityForce;
+            this.fish.body.setAccelerationY(-fishAcceleration);
 
-            //play vfx_up animation
+            //play vfx_up animation & sfx_up sound
             let tempVFX = this.add.sprite(this.fish.x, this.fish.y, "vfx_up").setOrigin(0.5, 0.5);
             tempVFX.anims.play("vfx_up");
+            this.sound.play("sfx_up");
             tempVFX.on("animationcomplete", () => {tempVFX.destroy();});
         }
         
         if(Phaser.Input.Keyboard.JustDown(keyDOWN) && this.physics.world.gravity.y < 0)
         {
             this.physics.world.gravity.y = gravityForce;
+            this.fish.body.setAccelerationY(fishAcceleration);
             
-            //play vfx_down animation
+            //play vfx_down animation & sfx_down sound
             let tempVFX = this.add.sprite(this.fish.x, this.fish.y, "vfx_down").setOrigin(0.5, 0.5);
             tempVFX.anims.play("vfx_down");
+            this.sound.play("sfx_down");
             tempVFX.on("animationcomplete", () => {tempVFX.destroy();});
         }
 
@@ -201,38 +216,81 @@ class Scene1 extends Phaser.Scene
     backgroundScroll()
     {
         //update tile sprite with parallax scrolling
-        for(let i = 0; i < this.backgroundGroup.getChildren().length; i++)
+        for(let i = 0; i < this.backgroundGroup.getLength(); i++)
         {
-            this.backgroundGroup.getChildren()[i].tilePositionX += this.backgroundSpeed[i];
+            this.backgroundGroup.getChildren()[i].tilePositionX += this.backgroundSpeed[i] * sceneVelocity;
         }
-
-        //update pipe sprite
-        this.pipe_base.tilePositionX += 7;
     }
 
-    addSpikeBall(y)
+    addSpikeBallUp()
     {
-        let tempSpikeBall = new SpikeBall(this, game.config.width + tileSize, y, "spikeBall", sceneVelocity);
+        let tempSpikeBall = new SpikeBall(this, game.config.width + tileSize, 90 + Math.random() * 100, "spikeBall").setScale(0.5);
         tempSpikeBall.body.setSize(64, 64);
-        tempSpikeBall.body.setDragY(1200);
+        tempSpikeBall.body.setDragY(500);
+        tempSpikeBall.setVelocityX(-sceneVelocity * 200);
         this.spikeBallGroup.add(tempSpikeBall);
     }
 
-    spikeBallGenerator()
+    addSpikeBallDown()
     {
+        let tempSpikeBall = new SpikeBall(this, game.config.width + tileSize, 190 + Math.random() * 270, "spikeBall").setScale(0.5);
+        tempSpikeBall.body.setSize(64, 64);
+        tempSpikeBall.body.setDragY(500);
+        tempSpikeBall.setVelocityX(-sceneVelocity * 200);
+        this.spikeBallGroup.add(tempSpikeBall);
+    }
 
+    updateSpeedChangeStatus()
+    {
+        this.updateSpeed = true;
+    }
+
+    updateSpikeBallSpeed()
+    {
+        if(this.updateSpeed)
+        {
+            for(let i = 0; i < this.spikeBallGroup.getLength(); i++)
+            {
+                this.spikeBallGroup.getChildren()[i].setVelocityX(-sceneVelocity * 200);
+            }
+            this.updateSpeed = false;
+            //console.log(`Spike Speed Updated to: ${-sceneVelocity * 200}`);
+        }
     }
 
     destroyEnemies()
     {
         //check if destory spikeball
-        for(let i = 0; i < this.spikeBallGroup.getLength(); i++)
+        if(this.spikeBallGroup.getLength() > 0)
         {
-            let temp = this.spikeBallGroup.getChildren()[i];
-            if(temp.x < 0 - tileSize)
+            for(let i = 0; i < this.spikeBallGroup.getLength(); i++)
             {
-                this.spikeBallGroup.remove(temp);
-                temp.destroy;                               //why destory rather than destory()?
+                let temp = this.spikeBallGroup.getChildren()[i];
+                if(temp.x < 0 - tileSize)
+                {
+                    this.spikeBallGroup.remove(temp);
+                    temp.destroy;                               //why destory rather than destory()?
+                }
+            }
+        }
+    }
+
+    sceneVelocityUp()
+    {
+        sceneVelocity += 0.1;
+        //console.log(`sceneVelocity: ${sceneVelocity}`);
+
+        if(sceneVelocity < 4)
+        {
+            if(sceneVelocity % 1 >= 0.99 || sceneVelocity % 1 <= 0.01)
+            {
+                this.spikeBallEventDown.remove(false);
+                this.spikeBallEventDown = this.time.addEvent({ delay: 8000 / sceneVelocity, callback: this.addSpikeBallDown, callbackScope: this, repeat: -1 });
+                //console.log("Down +");
+
+                this.spikeBallEventUp.remove(false);
+                this.spikeBallEventUp = this.time.addEvent({ delay: 5000 / sceneVelocity, callback: this.addSpikeBallUp, callbackScope: this, repeat: -1 });
+                //console.log("Up +");
             }
         }
     }
