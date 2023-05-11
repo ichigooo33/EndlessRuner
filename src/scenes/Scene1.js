@@ -33,6 +33,8 @@ class Scene1 extends Phaser.Scene
         this.bg_midground = this.add.tileSprite(0, 0, 960, 540, "scene1_bg_midground").setOrigin(0, 0);
         this.bg_foreground = this.add.tileSprite(0, 0, 960, 540, "scene1_bg_foreground").setOrigin(0, 0);
 
+        this.bg_turotial = this.add.image(0, 0, "scene1_bg_tutorial").setOrigin(0, 0);
+
         //create pipe & blend color
         this.pipe_base = this.add.tileSprite(0, 0, 960, 540, "scene1_pipe_base").setOrigin(0, 0);
         
@@ -55,6 +57,22 @@ class Scene1 extends Phaser.Scene
         this.backgroundGroup.add(this.bg_midground);
         this.backgroundGroup.add(this.bg_foreground);
         this.backgroundGroup.add(this.pipe_base);
+
+        //add gameOver text
+        let gameOverTextConfig = {
+            fontFamily: "Monospace",
+            fontSize: "24px",
+            color: "#ffffff",
+            align: "center",
+            padding: {
+                top: 5,
+                bottom: 5,
+            }
+        }
+        this.gameOverText_1 = this.add.text(game.config.width / 2, game.config.height / 3, "GAME OVER", gameOverTextConfig).setOrigin(0.5);
+        this.gameOverText_2 = this.add.text(game.config.width / 2, game.config.height / 3 + tileSize, "Press (R) to Restart or ← for Menu", gameOverTextConfig).setOrigin(0.5);
+        this.gameOverText_1.alpha = 1;
+        this.gameOverText_2.alpha = 1;
 
         //create fish animation
         this.anims.create({
@@ -93,6 +111,11 @@ class Scene1 extends Phaser.Scene
             frameRate: 12,
             repeat: 0
         });
+
+        //create bgm
+        this.bgm = this.sound.add("bgm");
+        this.bgm.setLoop(true);
+        this.bgm.play();
 
         //set up player fish
         this.fish = this.physics.add.sprite(game.config.width / 6, game.config.height / 2, "player_atlas", "player1");
@@ -143,27 +166,38 @@ class Scene1 extends Phaser.Scene
         this.gameOver = false;
 
         //create time events
-        this.speedUpEvent = this.time.addEvent({ delay: 2000, callback: this.sceneVelocityUp, callbackScope: this, repeat: 50 }); //speed up every 2 seconds, 100 seconds to reach maxSpeed
-        this.speedChangeEvent = this.time.addEvent({ delay: 2000, callback: this.updateSpeedChangeStatus, callbackScope: this, repeat: -1 });
-        this.spikeBallEventUp = this.time.addEvent({ delay: 5000, callback: this.addSpikeBallUp, callbackScope: this, repeat: -1 });
-        this.spikeBallEventDown = this.time.addEvent({ delay: 8000, callback: this.addSpikeBallDown, callbackScope: this, repeat: -1 });
+        this.speedUpEvent = this.time.addEvent({ delay: 2000, callback: this.sceneVelocityUp, callbackScope: this, repeat: 50 });                   //speed up every 2 seconds, 100 seconds to reach maxSpeed
+        this.speedChangeEvent = this.time.addEvent({ delay: 2000, callback: this.updateSpeedChangeStatus, callbackScope: this, repeat: -1 });       //set this.speedChange to false, used to update spikeBall speed
+        this.spikeBallEventUp = this.time.addEvent({ delay: 5000, callback: this.addSpikeBallUp, callbackScope: this, repeat: -1 });                //generate more spikeBalls on the top half
+        this.spikeBallEventDown = this.time.addEvent({ delay: 8000, callback: this.addSpikeBallDown, callbackScope: this, repeat: -1 });            //generate more spikeBalls on the botton half
+        this.currentScoreUpdateEvent = this.time.addEvent({ delay: 1000, callback: this.updateCurrentScore, callbackScope: this, repeat: -1 });          //update current score every second
     }
 
     update()
     {
         if(Phaser.Input.Keyboard.JustDown(keyG))
         {
-            console.log(`Current Spike Ball Number: ${this.spikeBallGroup.getLength()}`);
+            console.log(`Current Score: ${currentScroe}`);
         }
 
         //update if not gameOver
         if(!this.gameOver)
         {
             this.backgroundScroll();
+            this.tutorialScroll();
             this.playerMove();
             this.playerSwim();
             this.destroyEnemies();
             this.updateSpikeBallSpeed();
+        }
+        else
+        {
+            //remove all events
+            this.speedUpEvent.remove(false);
+            this.speedChangeEvent.remove(false);
+            this.spikeBallEventUp.remove(false);
+            this.spikeBallEventDown.remove(false);
+            this.currentScoreUpdateEvent.remove(false);
         }
     }
 
@@ -219,6 +253,18 @@ class Scene1 extends Phaser.Scene
         for(let i = 0; i < this.backgroundGroup.getLength(); i++)
         {
             this.backgroundGroup.getChildren()[i].tilePositionX += this.backgroundSpeed[i] * sceneVelocity;
+        }
+    }
+
+    tutorialScroll()
+    {
+        if(this.bg_turotial.x > -game.config.width)
+        {
+            this.bg_turotial.x -= 7 * sceneVelocity;
+        }
+        else
+        {
+            this.bg_turotial.destroy();
         }
     }
 
@@ -293,5 +339,10 @@ class Scene1 extends Phaser.Scene
                 //console.log("Up +");
             }
         }
+    }
+
+    updateCurrentScore()
+    {
+        currentScroe += sceneVelocity * 10;
     }
 }

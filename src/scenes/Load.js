@@ -20,6 +20,7 @@ class Load extends Phaser.Scene
         this.load.image("scene1_bg_midground", "scene1_bg_midground.png");
         this.load.image("scene1_bg_foreground", "scene1_bg_foreground.png");
         this.load.image("scene1_bg_starmoon", "scene1_bg_starmoon.png");
+        this.load.image("scene1_bg_tutorial", "scene1_bg_tutorial.png");
         this.load.image("scene1_pipe_base", "scene1_pipe_base.png");
 
         this.load.audio("bgm", "bgm.mp3");
